@@ -8,7 +8,7 @@ Add this line to your application's Gemfile:
 
 ```ruby
 group :development do
-  gem 'aws_instance_connect_helper', git: 'git@github.com:sunnyfounder/aws_instance_connect_helper.git', branch: 'v0.1.0'
+  gem 'aws_instance_connect_helper', git: 'git@github.com:sunnyfounder/aws_instance_connect_helper.git', tag: 'v0.1.0'
 end
 ```
 
