@@ -41,6 +41,15 @@ def retrieve_public_key
   File.read(location)
 end
 
+def prompt(item, default:)
+  prompt_string = "Please enter #{item}"
+  prompt_string += " (#{default})" if default
+  print(prompt_string + ': ')
+  response = STDIN.gets.chomp
+
+  response.strip.empty? ? default : response
+end
+
 namespace :load do
   task :defaults do
     set :aws_helper_env,       (proc { fetch :rails_env })
