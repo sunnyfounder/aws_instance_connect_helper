@@ -1,29 +1,19 @@
-require 'aws-sdk-ec2'
 require 'aws-sdk-ec2instanceconnect'
+require 'aws_instance_connect_helper/ec2_collection'
 
 desc 'Send Public SSH key to EC2 through Instance Connect'
 namespace :aws do
   task :access do
     begin
-      ec2 = Aws::EC2::Resource.new
-      filters = []
-      filters.push(name: 'instance-state-name', values: ['running'])
+      system 'aws-mfa'
+      puts ''
 
-      instances = ec2.instances(filters: filters).map do |instance|
-        {
-          name: instance.tags.find { |hash| hash[:key] == 'Name' }&.[](:value),
-          project: instance.tags.find { |hash| hash[:key] == 'Project' }&.[](:value),
-          environment: instance.tags.find { |hash| hash[:key] == 'Environment' }&.[](:value),
-          function: instance.tags.find { |hash| hash[:key] == 'Function' }&.[](:value),
-          public_ip: instance.public_ip_address,
-          availability_zone: instance.placement.availability_zone,
-          instance_id: instance.instance_id,
-        }
-      end
+      ec2_client = AwsInstanceConnectHelper::Ec2Collection.new
 
-      instances = filter_instances(instances, filter_key: :project)
-      instances = filter_instances(instances, filter_key: :environment)
-      instance = filter_instances(instances, filter_key: :name).first
+      filter_instances(ec2_client, filter_key: :project)
+      filter_instances(ec2_client, filter_key: :environment)
+      filter_instances(ec2_client, filter_key: :name)
+      instance = ec2_client.instances.first
 
       identity = select_prompt :identity, options: ['apps', 'ubuntu']
       public_key = retrieve_public_key
@@ -35,12 +25,10 @@ namespace :aws do
         availability_zone: instance[:availability_zone],
         ssh_public_key: public_key
       )
+      puts "SSH public key sent to #{instance.name}(#{instance.public_ip})"
 
       auto_connect = prompt :auto_connect, default: 'y'
       system "ssh #{identity}@#{instance[:public_ip]}" if auto_connect == 'y'
-    rescue Aws::EC2::Errors::RequestExpired => e
-      sh('aws-mfa')
-      retry
     rescue StandardError => e
       puts e.inspect
       raise
@@ -54,10 +42,10 @@ def retrieve_public_key
   File.read(location)
 end
 
-def filter_instances(instances, filter_key:)
-  options = instances.collect{ |instance| instance[filter_key] }.uniq
+def filter_instances(ec2_client, filter_key:)
+  options = ec2_client.instances.map(&filter_key).uniq
   selection = select_prompt(filter_key, options: options)
-  instances.filter { |instance| instance[filter_key] == selection }
+  ec2_client.filter(filter_key, selection)
 end
 
 def select_prompt(item, options: [], default: 0)
