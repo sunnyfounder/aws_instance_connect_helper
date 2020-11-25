@@ -38,6 +38,9 @@ namespace :aws do
 
       auto_connect = prompt :auto_connect, default: 'y'
       system "ssh #{identity}@#{instance[:public_ip]}" if auto_connect == 'y'
+    rescue Aws::EC2::Errors::RequestExpired => e
+      sh('aws-mfa')
+      retry
     rescue StandardError => e
       puts e.inspect
       raise

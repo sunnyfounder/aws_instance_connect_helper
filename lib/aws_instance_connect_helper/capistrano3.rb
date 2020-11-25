@@ -3,27 +3,35 @@ require 'aws-sdk-ec2instanceconnect'
 
 namespace :aws_helper do
   task :setup do
-    ec2_connect_client = Aws::EC2InstanceConnect::Client.new
-    functions = Array(fetch(:aws_helper_functions))
+    begin
+      ec2_connect_client = Aws::EC2InstanceConnect::Client.new
+      functions = Array(fetch(:aws_helper_functions))
 
-    default_location = "#{Dir.home}/.ssh/id_rsa.pub"
-    ask :public_key_location, default_location
-    public_key = File.read(fetch(:public_key_location))
+      default_location = "#{Dir.home}/.ssh/id_rsa.pub"
+      ask :public_key_location, default_location
+      public_key = File.read(fetch(:public_key_location))
 
-    functions.each do |function|
-      instances = ec2_instances(function: function)
+      functions.each do |function|
+        instances = ec2_instances(function: function)
 
-      server_ips = instances.map(&:public_ip_address)
-      set "#{function}_servers".to_sym, server_ips
+        server_ips = instances.map(&:public_ip_address)
+        set "#{function}_servers".to_sym, server_ips
 
-      instances.each do |instance|
-        ec2_connect_client.send_ssh_public_key(
-          instance_os_user: 'apps',
-          instance_id: instance.instance_id,
-          availability_zone: instance.placement.availability_zone,
-          ssh_public_key: public_key
-        )
+        instances.each do |instance|
+          ec2_connect_client.send_ssh_public_key(
+            instance_os_user: 'apps',
+            instance_id: instance.instance_id,
+            availability_zone: instance.placement.availability_zone,
+            ssh_public_key: public_key
+          )
+        end
       end
+    rescue Aws::EC2::Errors::RequestExpired => e
+      sh('aws-mfa')
+      retry
+    rescue StandardError => e
+      puts e.inspect
+      raise
     end
   end
 
