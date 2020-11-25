@@ -11,7 +11,7 @@ namespace :aws_helper do
 
       functions = Array(fetch(:aws_helper_functions))
       functions.each do |function|
-        instances = ec2_client.instances(project: fetch(:aws_helper_project), environment: fetch(:aws_helper_env), function: function)
+        instances = ec2_client.instances(project: fetch(:aws_helper_project), environment: fetch(:aws_helper_env).to_s, function: function)
         server_ips = instances.map(&:public_ip)
         set "#{function}_servers".to_sym, server_ips
       end
