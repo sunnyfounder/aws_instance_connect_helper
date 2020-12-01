@@ -8,8 +8,8 @@ namespace :aws_helper do
       puts ''
 
       ec2_client = AwsInstanceConnectHelper::Ec2Collection.new
-      ec2_client.filter(project: fetch(:aws_helper_project))
-      ec2_client.filter(environment: fetch(:aws_helper_env).to_s)
+      ec2_client.filter(:project, fetch(:aws_helper_project))
+      ec2_client.filter(:environment, fetch(:aws_helper_env).to_s)
 
       functions = Array(fetch(:aws_helper_functions))
       functions.each do |function|
