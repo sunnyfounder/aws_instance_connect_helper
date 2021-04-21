@@ -47,7 +47,7 @@ def prompt(item, default:)
   prompt_string += " (#{default})" if default
   print(prompt_string + ': ')
   response = STDIN.gets
-  return default if response.empty?
+  return default if response.nil?
 
   response.chomp.strip.empty? ? default : response
 end
