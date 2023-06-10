@@ -74,5 +74,6 @@ def prompt(item, default:)
   response = STDIN.gets
   return default if response.nil?
 
-  response.chomp.strip.empty? ? default : response
+  chomped_response = response.chomp.strip
+  chomped_response.empty? ? default : chomped_response
 end
